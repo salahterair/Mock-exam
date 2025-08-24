@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8' />
+<meta name='viewport' content='width=device-width, initial-scale=1' />
+<title>UMST Mock Exam — Thorax, Abdomen, Pelvis, Embryology & Histology</title>
+<style>
+  .exam, .exam * { box-sizing: border-box; }
+  .exam {
+    --bg:#0f172a; --card:#0b1226; --ink:#e5e7eb; --muted:#9ca3af; --line:#1f2937;
+    --accent:#22c55e; --danger:#ef4444; --brand:#2563eb; --info:#38bdf8;
+    font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--ink); background: linear-gradient(135deg,#0b1226,#0f172a);
+    min-height:100vh; padding:22px;
+  }
+  @media (prefers-color-scheme: light) {
+    .exam { --bg:#f4f6fb; --card:#ffffff; --ink:#0b1226; --muted:#475569; --line:#e5e7eb;
+             --accent:#16a34a; --danger:#dc2626; --brand:#2563eb; --info:#0284c7; background:#f4f6fb; }
+  }
+  .wrap{max-width:1000px;margin:0 auto;}
+  header{background:linear-gradient(135deg,rgba(37,99,235,.15),rgba(2,132,199,.08));border:1px solid var(--line);
+          padding:18px 20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);margin-bottom:16px;}
+  header h1{margin:0 0 6px;text-align:center;font-size:clamp(22px,3.2vw,30px);}
+  header p{margin:0;text-align:center;color:var(--muted);font-size:14px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 8px 26px rgba(0,0,0,.22);}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .left,.right{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  select,.btn{appearance:none;border:1px solid var(--line);background:transparent;color:var(--ink);
+              padding:10px 12px;border-radius:10px;font-size:14px;cursor:pointer;}
+  .btn.primary{background:var(--brand);border-color:transparent;color:#fff;}
+  .btn.accent{background:var(--accent);border-color:transparent;color:#fff;}
+  .btn.danger{background:var(--danger);border-color:transparent;color:#fff;}
+  .question{border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:12px;padding:14px;margin-bottom:12px;}
+  .qhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--muted);font-size:13px;}
+  .qtext{font-size:16px;line-height:1.4;color:var(--ink);}
+  .options{list-style:none;margin:10px 0 0;padding:0;}
+  .options li{margin:8px 0;}
+  .opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);padding:10px;border-radius:10px;
+        background:rgba(255,255,255,.04);cursor:pointer;transition:transform .06s ease,border-color .2s ease;}
+  .opt:hover{transform:translateY(-1px);border-color:rgba(56,189,248,.6);}
+  .opt input{margin-top:4px;}
+  .opt.correct{border-color:rgba(34,197,94,.8);background:rgba(34,197,94,.08);}
+  .opt.incorrect{border-color:rgba(239,68,68,.8);background:rgba(239,68,68,.08);}
+  .exp{display:none;margin-top:8px;padding:10px;border-left:4px solid var(--info);background:rgba(56,189,248,.08);border-radius:10px;font-size:14px;}
+  .exp.show{display:block;}
+  .exp.ok{border-left-color:var(--accent);background:rgba(34,197,94,.08);}
+  .exp.bad{border-left-color:var(--danger);background:rgba(239,68,68,.08);}
+  .results{text-align:center;font-weight:700;font-size:18px;margin:16px 0 8px;}
+  .best{text-align:center;font-size:12px;color:var(--muted);margin-top:4px;}
+  .legend{font-size:12px;color:var(--muted);}
+  .bottom-controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="exam">
+  <div class="wrap">
+    <header class="card">
+      <h1>UMST Mock Exam — Thorax · Abdomen · Pelvis · General Embryology · General Histology</h1>
+      <p>75 MCQs (15 per topic). Select your answers; explanations now appear <em>immediately</em> after you choose.</p>
+    </header>
+
+    <div class="card">
+      <div class="controls">
+        <div class="left">
+          <label class="legend">Topic:</label>
+          <select id="topicSel">
+            <option value="All">All Topics (75)</option>
+            <option value="Thorax">Thorax (15)</option>
+            <option value="Abdomen">Abdomen (15)</option>
+            <option value="Pelvis">Pelvis (15)</option>
+            <option value="General Embryology">General Embryology (15)</option>
+            <option value="General Histology">General Histology (15)</option>
+          </select>
+          <button class="btn primary" id="startBtn">Start / Reset</button>
+        </div>
+        <div class="right">
+          <button class="btn accent" id="printBtn">Print/Save PDF</button>
+          <button class="btn danger" id="clearBestBtn">Clear Best</button>
+        </div>
+      </div>
+
+      <div id="qRoot"></div>
+
+      <!-- Moved SUBMIT under the questions -->
+      <div class="bottom-controls">
+        <button class="btn" id="submitBtn">Submit</button>
+      </div>
+
+      <div id="results" class="results" style="display:none;"></div>
+      <div id="best" class="best" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BANK = [{"id": "b2a29274", "topic": "Thorax", "q": "A 58-year-old man with crushing chest pain radiating to the left arm is found to have an occlusion of the left anterior descending (LAD) artery. \nWhich region of the heart is most at risk of ischemia?", "opts": ["SA node and right atrium", "Posterior wall of the left ventricle supplied by PDA", "Anterior interventricular septum and anterior walls of ventricles", "Right ventricle free wall only"], "ans": 2, "exp": "The LAD supplies the anterior 2/3 of the interventricular septum and anterior walls of both ventricles."}, {"id": "dfebafa2", "topic": "Thorax", "q": "A stab wound at the left 5th intercostal space in the midclavicular line is most likely to injure which cardiac chamber?", "opts": ["Right ventricle", "Left ventricle", "Right atrium", "Left atrium"], "ans": 1, "exp": "The cardiac apex is near the left 5th ICS MCL; the left ventricle forms the apex."}, {"id": "e7fc9b1a", "topic": "Thorax", "q": "A patient with a tension pneumothorax requires immediate needle decompression. The classic emergency landmark is:", "opts": ["2nd intercostal space at the midclavicular line, just superior to the rib below", "4th intercostal space at the midclavicular line, just inferior to the rib above", "6th intercostal space at the midaxillary line, inferior to the rib below", "2nd intercostal space at the midaxillary line, directly over the rib"], "ans": 0, "exp": "Insert just superior to the rib to avoid the VAN bundle; 2nd ICS MCL is the classic site."}, {"id": "7c039f9f", "topic": "Thorax", "q": "During cardiac auscultation, the aortic valve is best heard at:", "opts": ["Right 2nd intercostal space at the sternal border", "Left 2nd intercostal space at the sternal border", "Left 5th intercostal space at the midclavicular line", "Right 5th intercostal space at the midclavicular line"], "ans": 0, "exp": "Aortic valve sounds: right 2nd ICS at the sternal border."}, {"id": "b0b75d99", "topic": "Thorax", "q": "Peau d’orange changes in breast cancer are caused primarily by:", "opts": ["Invasion of the pectoralis major muscle", "Obstruction of cutaneous lymphatics tethering the suspensory (Cooper) ligaments", "Direct spread into the pleural cavity", "Injury to the long thoracic nerve"], "ans": 1, "exp": "Skin edema from lymphatic obstruction tethers on Cooper’s ligaments → dimpled appearance."}, {"id": "a0d62051", "topic": "Thorax", "q": "Thoracentesis is performed to remove pleural fluid. Where should the needle pass to avoid the main intercostal neurovascular bundle?", "opts": ["Just inferior to the rib", "Midway between adjacent ribs", "At the inferior margin of an intercostal space", "Just superior to the rib"], "ans": 3, "exp": "Main VAN bundle runs along the inferior border of the rib; insert just superior to the rib."}, {"id": "ad110b26", "topic": "Thorax", "q": "A barium swallow shows constriction of the esophagus where it is crossed by the aortic arch. This level of narrowing is best explained by:", "opts": ["The esophagus crossing the diaphragm at T10", "Compression by the left main bronchus and aortic arch at the mid-thorax", "Compression at the upper esophageal sphincter (C6)", "Compression at the cricopharyngeus near T12"], "ans": 1, "exp": "Physiologic narrowings: C6, aortic arch/left main bronchus, and T10 at the diaphragm."}, {"id": "c4381d02", "topic": "Thorax", "q": "Irritation of the diaphragmatic pleura causes pain referred to the shoulder via which nerve and roots?", "opts": ["Intercostal nerves T7–T11", "Vagus nerve (CN X)", "Phrenic nerve C3–C5", "Sympathetic chain T1–T4"], "ans": 2, "exp": "Phrenic (C3–C5) supplies central diaphragmatic pleura; pain refers to shoulder."}, {"id": "6b506496", "topic": "Thorax", "q": "Coronary dominance is defined by the artery that gives rise to the posterior descending artery (PDA). In a right-dominant circulation, the PDA usually comes from the:", "opts": ["Left circumflex artery", "Left anterior descending artery", "Right coronary artery", "Conus branch"], "ans": 2, "exp": "In right dominance the RCA gives rise to the PDA."}, {"id": "387632b9", "topic": "Thorax", "q": "A teenager with coarctation of the aorta shows rib notching on chest X-ray. This sign is due to enlarged collateral vessels arising from the:", "opts": ["Posterior intercostal arteries directly from the aorta", "Internal thoracic artery → anterior intercostal arteries", "Superior epigastric to inferior epigastric anastomoses only", "Vertebral arteries"], "ans": 1, "exp": "Collateral flow via subclavian → internal thoracic → anterior intercostals → posterior intercostals causes rib notching."}, {"id": "ba4c2169", "topic": "Thorax", "q": "A pulmonary embolus most commonly lodges in branches of the pulmonary artery. Pulmonary infarcts are often hemorrhagic because the lungs have:", "opts": ["No lymphatic drainage", "A dual blood supply from pulmonary and bronchial arteries", "Extensive venous anastomoses", "A portal venous system"], "ans": 1, "exp": "Lungs receive both pulmonary and bronchial arterial supply; infarcts tend to be hemorrhagic."}, {"id": "3faa1ffb", "topic": "Thorax", "q": "During esophagectomy, a structure posterior to the esophagus at the T5–T6 level is injured, resulting in chylothorax. The structure is most likely the:", "opts": ["Azygos vein", "Thoracic duct", "Hemiazygos vein", "Left recurrent laryngeal nerve"], "ans": 1, "exp": "The thoracic duct ascends posterior to the esophagus, crossing near T5; injury → chylothorax."}, {"id": "76d38ecc", "topic": "Thorax", "q": "A stab wound at the sternal angle (Angle of Louis) is at the level of which important structure?", "opts": ["Arch of aorta at its highest point only", "Bifurcation of the trachea (carina) at ~T4/5", "Esophageal hiatus at T10", "IVC hiatus at T8"], "ans": 1, "exp": "Sternal angle plane (T4/5) includes tracheal bifurcation and aortic arch transitions."}, {"id": "c7bd16f1", "topic": "Thorax", "q": "A patient has sharp, localized pain over the lateral chest wall with inspiration due to inflamed parietal pleura. This pain is carried primarily by:", "opts": ["Phrenic nerves", "Intercostal nerves", "Vagus nerves", "Sympathetic chain"], "ans": 1, "exp": "Costal parietal pleura is innervated by intercostal nerves → localized chest wall pain."}, {"id": "4e4df085", "topic": "Thorax", "q": "The thoracic duct empties into the venous system at the junction of the:", "opts": ["Right internal jugular and right subclavian veins", "Left internal jugular and left subclavian veins", "Superior vena cava and azygos vein", "Right atrium and SVC"], "ans": 1, "exp": "Thoracic duct drains at the left venous angle (left IJV + left subclavian)."}, {"id": "1deec7cd", "topic": "Abdomen", "q": "A 22-year-old presents with periumbilical pain migrating to the right lower quadrant with rebound tenderness at McBurney’s point. \nEarly visceral pain is referred to the umbilicus because the appendix is derived from the:", "opts": ["Foregut (T5–T9)", "Midgut (T10)", "Hindgut (L1)", "Non-gut mesoderm"], "ans": 1, "exp": "Appendix is midgut; visceral pain refers to T10 (umbilicus)."}, {"id": "eeb37a15", "topic": "Abdomen", "q": "A trauma patient requires the Pringle maneuver—compression of the hepatoduodenal ligament—to control bleeding. Which vessels are directly compressed?", "opts": ["Portal vein, proper hepatic artery, and common bile duct", "Hepatic veins and IVC", "Left and right gastric arteries", "Splenic artery and vein"], "ans": 0, "exp": "Hepatoduodenal ligament contains the portal triad."}, {"id": "8c2b9908", "topic": "Abdomen", "q": "Which organ is secondarily retroperitoneal?", "opts": ["Jejunum", "Spleen", "Pancreas (except tail)", "Sigmoid colon"], "ans": 2, "exp": "Pancreas (except tail) becomes secondarily retroperitoneal after rotation."}, {"id": "122550a3", "topic": "Abdomen", "q": "A patient with portal hypertension develops caput medusae due to anastomoses between paraumbilical veins and:", "opts": ["Inferior epigastric veins (systemic)", "Superior mesenteric vein (portal)", "Splenic vein (portal)", "Renal veins (systemic)"], "ans": 0, "exp": "Paraumbilical (portal) ↔ superficial/inferior epigastric (systemic)."}, {"id": "1a4e1483", "topic": "Abdomen", "q": "After cholecystectomy, a bile leak suggests duct injury in Calot’s triangle, bounded by the cystic duct, common hepatic duct, and the:", "opts": ["Inferior vena cava", "Left gastric artery", "Inferior surface of the liver", "Right hepatic vein"], "ans": 2, "exp": "Calot’s triangle boundaries include the inferior surface of the liver."}, {"id": "a275d306", "topic": "Abdomen", "q": "A thrombus in the superior mesenteric artery will most directly compromise which region?", "opts": ["Foregut", "Midgut (jejunum → proximal 2/3 transverse colon)", "Hindgut", "Pelvic organs"], "ans": 1, "exp": "SMA supplies the midgut."}, {"id": "b48c4708", "topic": "Abdomen", "q": "The lesser sac can be entered through the omental foramen. Its anterior boundary is the:", "opts": ["Inferior vena cava", "Portal triad within the hepatoduodenal ligament", "First part of the duodenum", "Caudate lobe of the liver"], "ans": 1, "exp": "Anterior boundary: portal triad in the hepatoduodenal ligament."}, {"id": "aeb63c03", "topic": "Abdomen", "q": "A posterior gastric ulcer may erode which vessel?", "opts": ["Left gastric artery", "Splenic artery", "Right gastro-omental artery", "Short gastric veins"], "ans": 1, "exp": "Splenic artery runs posteriorly near the stomach; erosion can cause bleeding."}, {"id": "54285344", "topic": "Abdomen", "q": "Compression of the 3rd part of the duodenum between the SMA and aorta is known as:", "opts": ["Median arcuate ligament syndrome", "Superior mesenteric artery (SMA) syndrome", "Pyloric stenosis", "Intussusception"], "ans": 1, "exp": "SMA syndrome compresses the 3rd part of the duodenum."}, {"id": "543a4a1f", "topic": "Abdomen", "q": "A retrocecal appendix can irritate which muscle producing a positive psoas sign (pain on hip extension)?", "opts": ["Quadratus lumborum", "Iliacus", "Psoas major", "Obturator internus"], "ans": 2, "exp": "Retrocecal appendix lies near psoas major; extension elicits pain."}, {"id": "65269b7b", "topic": "Abdomen", "q": "Esophageal varices involve dilation of the left gastric vein (portal) anastomosing with which systemic veins?", "opts": ["Azygos/hemiazygos veins", "Renal veins", "Inferior epigastric veins", "Femoral veins"], "ans": 0, "exp": "Distal esophageal portosystemic anastomosis with azygos system."}, {"id": "2e40ce62", "topic": "Abdomen", "q": "Renal calculi often lodge at natural constrictions of the ureter, including:", "opts": ["Entry into the renal pelvis, crossing the iliac vessels, and ureterovesical junction", "Hilum of the spleen, near pancreas, and pylorus", "Cecum, hepatic, and splenic flexures", "Gallbladder neck only"], "ans": 0, "exp": "Classical constrictions: PUJ, pelvic brim (iliac vessels), UVJ."}, {"id": "5942f186", "topic": "Abdomen", "q": "During splenectomy, which structure within the splenorenal ligament must be protected?", "opts": ["Tail of the pancreas", "Head of the pancreas", "Common bile duct", "Cystic duct"], "ans": 0, "exp": "The tail of the pancreas lies in the splenorenal ligament."}, {"id": "b2d468bb", "topic": "Abdomen", "q": "Severe hemorrhagic pancreatitis shows Cullen and Grey Turner signs. The pancreas is located mostly at which vertebral levels?", "opts": ["T6–T8", "T12–L3", "L4–L5", "S1–S2"], "ans": 1, "exp": "Pancreas spans across ~L1–L2; clinically T12–L3 region."}, {"id": "19646cb4", "topic": "Abdomen", "q": "Pain from foregut organs is generally referred via:", "opts": ["Greater splanchnic nerves (T5–T9)", "Lesser splanchnic (T10–T11)", "Least splanchnic (T12)", "Pelvic splanchnic (S2–S4)"], "ans": 0, "exp": "Foregut afferents travel with greater splanchnic nerves."}, {"id": "de0e6342", "topic": "Pelvis", "q": "During a pudendal nerve block, the ischial spine is palpated. Which ligament attaches to this spine?", "opts": ["Sacrotuberous ligament", "Sacrospinous ligament", "Inguinal ligament", "Transverse cervical (cardinal) ligament"], "ans": 1, "exp": "Sacrospinous ligament runs from sacrum to ischial spine."}, {"id": "fdaa9ccf", "topic": "Pelvis", "q": "In BPH, which lobe is typically enlarged and can obstruct the prostatic urethra?", "opts": ["Anterior lobe", "Peripheral (posterior) zone", "Median (central) lobe around the urethra", "Posterolateral lobe only"], "ans": 2, "exp": "BPH commonly involves periurethral/central tissue (median lobe)."}, {"id": "8ea60eb1", "topic": "Pelvis", "q": "During radical prostatectomy, injury to which nerves may cause erectile dysfunction?", "opts": ["Ilioinguinal nerves", "Genitofemoral nerves", "Cavernous nerves from the prostatic plexus (parasympathetic)", "Pudendal nerve only"], "ans": 2, "exp": "Parasympathetic cavernous nerves mediate erection; at risk in surgery."}, {"id": "d4244af9", "topic": "Pelvis", "q": "Uterine prolapse is associated with weakness of which structure carrying the uterine artery?", "opts": ["Round ligament of the uterus", "Ovarian ligament", "Transverse cervical (cardinal) ligament", "Sacrospinous ligament"], "ans": 2, "exp": "Cardinal ligament provides uterine support and transmits the uterine artery."}, {"id": "64abacfc", "topic": "Pelvis", "q": "During hysterectomy, the ureter is at risk where the uterine artery passes superior to it ('water under the bridge') near the:", "opts": ["Ischial tuberosity", "Lateral fornix of the vagina", "Pubic symphysis", "Urachus"], "ans": 1, "exp": "Relationship occurs near the lateral fornix; identify before ligation."}, {"id": "98220b51", "topic": "Pelvis", "q": "A straddle injury to the anterior urethra leads to urine extravasation into the:", "opts": ["Deep perineal pouch and paravesical space", "Superficial perineal pouch and scrotum, up into lower abdominal wall", "Ischioanal fossa only", "Retropubic (prevesical) space only"], "ans": 1, "exp": "Spongy urethra injury → superficial pouch, scrotum/penis, lower anterior abdominal wall."}, {"id": "afaf444e", "topic": "Pelvis", "q": "Postpartum fecal incontinence due to pelvic floor injury most likely damages:", "opts": ["Puborectalis (part of levator ani)", "Coccygeus", "Gluteus maximus", "Piriformis"], "ans": 0, "exp": "Puborectalis maintains the anorectal angle critical for continence."}, {"id": "8e4b38ae", "topic": "Pelvis", "q": "Most common site of ectopic pregnancy:", "opts": ["Infundibulum", "Ampulla", "Isthmus", "Peritoneal cavity near ovary"], "ans": 1, "exp": "Ampulla is most common for fertilization and ectopic implantation."}, {"id": "cd718c59", "topic": "Pelvis", "q": "Internal hemorrhoids cause painless bleeding because pain is carried by:", "opts": ["Inferior rectal nerves (somatic)", "Pelvic splanchnic nerves", "Visceral afferents via inferior hypogastric plexus", "Iliohypogastric nerve"], "ans": 2, "exp": "Above pectinate line → visceral afferents with autonomics (painless)."}, {"id": "cbb498f2", "topic": "Pelvis", "q": "Rupture of the bladder dome after pelvic trauma leads to intraperitoneal urine leakage because the dome is covered by:", "opts": ["Endopelvic fascia", "Parietal peritoneum", "Visceral peritoneum", "No peritoneum"], "ans": 2, "exp": "Bladder dome is covered by peritoneum; rupture → intraperitoneal leak."}, {"id": "078ffa86", "topic": "Pelvis", "q": "Testicular cancer metastasizes first to which lymph nodes?", "opts": ["Superficial inguinal", "Deep inguinal", "External iliac", "Para-aortic (lumbar)"], "ans": 3, "exp": "Testes drain to para-aortic nodes at L1 via gonadal vessels."}, {"id": "2885eb22", "topic": "Pelvis", "q": "Pelvic fracture injures the membranous urethra. Urine extravasates into the:", "opts": ["Superficial perineal pouch", "Deep perineal pouch and retropubic space", "Scrotum only", "Space deep to Buck fascia only"], "ans": 1, "exp": "Membranous urethra injury → deep pouch and potentially retropubic space."}, {"id": "3eb7e236", "topic": "Pelvis", "q": "Primary blood supply to the superior aspect of the bladder:", "opts": ["Superior vesical artery", "Inferior vesical (or vaginal) artery", "Obturator artery", "Middle rectal artery"], "ans": 0, "exp": "Superior vesical (from umbilical, internal iliac) supplies anterosuperior bladder."}, {"id": "c78e09fa", "topic": "Pelvis", "q": "Reduced sensation over the posterior scrotum after straddle injury implicates:", "opts": ["Ilioinguinal nerve", "Genital branch of genitofemoral", "Posterior scrotal nerves (pudendal)", "Anterior scrotal nerves"], "ans": 2, "exp": "Posterior scrotal nerves are branches of the pudendal nerve (S2–S4)."}, {"id": "33c26970", "topic": "Pelvis", "q": "Ovarian lymph drains primarily to:", "opts": ["External iliac nodes", "Internal iliac nodes", "Superficial inguinal nodes", "Para-aortic (lumbar) nodes"], "ans": 3, "exp": "Ovarian lymphatics follow ovarian vessels to para-aortic nodes."}, {"id": "b895104b", "topic": "General Embryology", "q": "Failure of primitive streak regression can lead to:", "opts": ["Sirenomelia (caudal regression)", "Situs inversus totalis", "Sacrococcygeal teratoma", "Omphalocele"], "ans": 2, "exp": "Persistent pluripotent cells may form sacrococcygeal teratomas."}, {"id": "77114c3b", "topic": "General Embryology", "q": "Failure of the cranial neuropore to close results in:", "opts": ["Spina bifida occulta", "Meningocele", "Anencephaly", "Myelomeningocele"], "ans": 2, "exp": "Cranial neuropore failure causes anencephaly, often lethal."}, {"id": "88832895", "topic": "General Embryology", "q": "A small outpouching on the antimesenteric border of the ileum with gastric mucosa suggests:", "opts": ["Omphalocele", "Meckel diverticulum", "Intestinal atresia", "Malrotation"], "ans": 1, "exp": "Meckel (vitelline duct remnant): rule of 2s; may contain ectopic tissue."}, {"id": "d7be15f2", "topic": "General Embryology", "q": "Neonate with extrusion of intestines not covered by peritoneum likely has:", "opts": ["Omphalocele", "Gastroschisis", "Physiologic herniation", "Cloacal exstrophy only"], "ans": 1, "exp": "Gastroschisis is paraumbilical with no peritoneal covering."}, {"id": "88550ace", "topic": "General Embryology", "q": "Which structure is derived from neural crest cells?", "opts": ["Motor neurons", "Schwann cells and melanocytes", "RBCs", "Hepatocytes"], "ans": 1, "exp": "Neural crest derivatives include Schwann cells and melanocytes."}, {"id": "7cb64c03", "topic": "General Embryology", "q": "The notochord persists in the adult as the:", "opts": ["Annulus fibrosus", "Nucleus pulposus", "Posterior longitudinal ligament", "Filum terminale"], "ans": 1, "exp": "Nucleus pulposus is a remnant of the notochord."}, {"id": "e35e90c8", "topic": "General Embryology", "q": "Polyhydramnios with esophageal atresia relates to failure of:", "opts": ["Recanalization of the esophagus", "Partitioning of the foregut by the tracheoesophageal septum", "Rotation of the midgut", "Apoptosis in the cloacal membrane"], "ans": 1, "exp": "Abnormal partitioning by the tracheoesophageal septum causes EA/TEF."}, {"id": "48da1a51", "topic": "General Embryology", "q": "Bochdalek diaphragmatic hernia arises from defective development of the:", "opts": ["Septum transversum", "Pleuroperitoneal membranes", "Body wall musculature", "Esophageal mesentery"], "ans": 1, "exp": "Failure of closure of pleuroperitoneal membranes posteriorly."}, {"id": "74fe855c", "topic": "General Embryology", "q": "Physiological herniation of midgut at week 6 occurs because:", "opts": ["Allantois must regress first", "Liver and kidneys compress the thorax", "Abdominal cavity is temporarily too small due to rapid liver growth", "Diaphragm is not yet formed"], "ans": 2, "exp": "Rapid liver and gut growth → temporary small abdominal cavity."}, {"id": "0d80dc29", "topic": "General Embryology", "q": "Splitting at the inner cell mass yields twins that typically share:", "opts": ["Separate placenta and amnions/chorions", "One placenta, one chorion, two amnions", "One placenta and one amnion", "Two placentas fused but separate membranes"], "ans": 1, "exp": "Monochorionic diamniotic twins (one placenta, two amnions)."}, {"id": "30da026d", "topic": "General Embryology", "q": "Left-right patterning defects (e.g., dextrocardia) are often due to dysfunction of:", "opts": ["Cilia at the primitive node", "Notochord formation", "Neural crest migration", "Somite segmentation"], "ans": 0, "exp": "Nodal cilia create leftward flow; defects → laterality disorders."}, {"id": "0ece87e5", "topic": "General Embryology", "q": "Failure of recanalization of the duodenum presents with:", "opts": ["Bilious vomiting and 'double bubble' sign", "Projectile non-bilious vomiting in a 6-week-old", "Bloody stools with currant jelly", "Green emesis relieved by prone position"], "ans": 0, "exp": "Duodenal atresia causes bilious vomiting and the double-bubble sign."}, {"id": "0fbbf12c", "topic": "General Embryology", "q": "Umbilical vein remnant in the adult is the:", "opts": ["Median umbilical ligament", "Medial umbilical ligaments", "Ligamentum teres hepatis", "Ligamentum venosum"], "ans": 2, "exp": "Left umbilical vein becomes ligamentum teres hepatis."}, {"id": "f5e1b8a1", "topic": "General Embryology", "q": "Correct pharyngeal pouch pairing:", "opts": ["1st pouch → thymus", "2nd pouch → palatine tonsil", "3rd pouch → thyroid follicular cells", "4th pouch → middle ear cavity"], "ans": 1, "exp": "2nd pouch forms palatine tonsil; 1st → middle ear cavity/auditory tube."}, {"id": "9d78d92c", "topic": "General Embryology", "q": "Embryonic folding during week 4:", "opts": ["Cephalocaudal and lateral folding incorporate yolk sac into gut tube", "Neural crest migration forms somites", "Placenta forms only from decidua basalis", "Amnion fuses with chorion to form chorion frondosum"], "ans": 0, "exp": "Folding transforms the flat disc into a cylinder and forms gut tube."}, {"id": "ad47b531", "topic": "General Histology", "q": "Normal bronchial lining epithelium that undergoes squamous metaplasia in smokers is:", "opts": ["Stratified squamous non-keratinized", "Simple columnar", "Pseudostratified ciliated columnar with goblet cells", "Simple cuboidal"], "ans": 2, "exp": "Respiratory epithelium is pseudostratified ciliated columnar with goblet cells."}, {"id": "370065a4", "topic": "General Histology", "q": "Osteogenesis imperfecta (Type I collagen defect) most directly affects:", "opts": ["Elastic fibers in arteries", "Reticular fibers in lymph nodes", "Bone matrix and tendons", "Basement membrane"], "ans": 2, "exp": "Type I collagen is abundant in bone and tendons."}, {"id": "86d7fe0e", "topic": "General Histology", "q": "Ehlers–Danlos (Type III) causes hyperextensible skin due to abnormal:", "opts": ["Type I collagen", "Type III collagen (reticular fibers)", "Elastin cross-linking", "Proteoglycans only"], "ans": 1, "exp": "Type III collagen defects affect reticular fibers in skin/vessels."}, {"id": "201b9fe3", "topic": "General Histology", "q": "Brown fat generates heat by:", "opts": ["Uncoupling oxidative phosphorylation via UCP1", "Increasing ATP synthase efficiency", "Shivering", "Fibrosis converting white to beige"], "ans": 0, "exp": "UCP1 in mitochondria uncouples oxidative phosphorylation to produce heat."}, {"id": "8bbce51c", "topic": "General Histology", "q": "Barrett esophagus shows replacement by:", "opts": ["Simple cuboidal", "Non-keratinized stratified squamous", "Keratinized stratified squamous", "Non-ciliated simple columnar with goblet cells (intestinal type)"], "ans": 3, "exp": "Intestinal metaplasia with goblet cells occurs in Barrett esophagus."}, {"id": "ca7e8b9d", "topic": "General Histology", "q": "Kartagener syndrome arises from defects in:", "opts": ["Actin microfilaments", "Dynein arms in microtubules", "Intermediate filaments", "Microvilli structure"], "ans": 1, "exp": "Dynein arm defects impair ciliary motility (9+2 axoneme)."}, {"id": "a913f5f2", "topic": "General Histology", "q": "Cartilage that resists compression in articular surfaces and tracheal rings:", "opts": ["Elastic cartilage", "Hyaline cartilage", "Fibrocartilage", "Calcified cartilage"], "ans": 1, "exp": "Hyaline cartilage is found in articular surfaces and airway support."}, {"id": "c61b6126", "topic": "General Histology", "q": "Scurvy impairs collagen hydroxylation due to deficiency of:", "opts": ["Vitamin A", "Vitamin C (ascorbic acid)", "Vitamin D", "Vitamin K"], "ans": 1, "exp": "Vitamin C needed for proline/lysine hydroxylation in collagen."}, {"id": "5d157264", "topic": "General Histology", "q": "Cell producing myelin in the peripheral nervous system:", "opts": ["Oligodendrocyte", "Schwann cell", "Astrocyte", "Microglia"], "ans": 1, "exp": "Schwann cells myelinate PNS axons; oligodendrocytes myelinate CNS."}, {"id": "ed5fab38", "topic": "General Histology", "q": "Troponin release after myocardial infarction indicates necrosis of:", "opts": ["Smooth muscle", "Cardiac muscle", "Skeletal muscle", "Myofibroblasts"], "ans": 1, "exp": "Cardiac muscle injury raises cardiac troponins."}, {"id": "a03b4071", "topic": "General Histology", "q": "Core of a motile cilium consists of:", "opts": ["9+0 microtubules", "9+2 microtubules", "13-protofilament microtubules only", "Actin filaments"], "ans": 1, "exp": "Motile cilia have a 9+2 axoneme with dynein arms."}, {"id": "9baed710", "topic": "General Histology", "q": "Basal lamina scaffold protein that binds type IV collagen is:", "opts": ["Fibronectin", "Laminin", "Elastin", "Decorin"], "ans": 1, "exp": "Laminin binds type IV collagen and integrins in the basal lamina."}, {"id": "60f0c02b", "topic": "General Histology", "q": "Marfan syndrome aortic dilation is due to a defect in:", "opts": ["Fibrillin-1 in elastic fibers", "Type I collagen cross-linking", "Proteoglycans", "Type III collagen"], "ans": 0, "exp": "Fibrillin-1 mutation weakens elastic fibers in the aorta."}, {"id": "00a0574b", "topic": "General Histology", "q": "Secretion mode in which entire cells disintegrate to release product (e.g., sebaceous glands):", "opts": ["Merocrine", "Apocrine", "Holocrine", "Endocrine"], "ans": 2, "exp": "Holocrine secretion releases entire cells and contents."}, {"id": "b386fd5b", "topic": "General Histology", "q": "Primary producer of extracellular matrix (collagen) in ordinary connective tissue:", "opts": ["Fibroblast", "Mast cell", "Macrophage", "Plasma cell"], "ans": 0, "exp": "Fibroblasts synthesize collagen, elastin, proteoglycans, and ground substance."}];
+
+const qRoot = document.getElementById('qRoot');
+const resultsEl = document.getElementById('results');
+const bestEl = document.getElementById('best');
+const topicSel = document.getElementById('topicSel');
+const startBtn = document.getElementById('startBtn');
+const submitBtn = document.getElementById('submitBtn');
+const printBtn = document.getElementById('printBtn');
+const clearBestBtn = document.getElementById('clearBestBtn');
+const LS_KEY = 'umst_mock_exam_best_overall';
+
+let CURRENT = [];
+
+function render(questions) {
+  qRoot.innerHTML = '';
+  questions.forEach((q, idx) => {
+    const id = `q_${q.id}`;
+    const block = document.createElement('div');
+    block.className = 'question';
+    block.dataset.qid = q.id;
+
+    const head = document.createElement('div');
+    head.className = 'qhead';
+    head.innerHTML = `<span>#${idx+1} — <strong>${q.topic}</strong></span>`;
+    block.appendChild(head);
+
+    const qtext = document.createElement('div');
+    qtext.className = 'qtext';
+    qtext.textContent = q.q;
+    block.appendChild(qtext);
+
+    const ul = document.createElement('ul');
+    ul.className = 'options';
+    q.opts.forEach((opt, oi) => {
+      const li = document.createElement('li');
+      const lab = document.createElement('label');
+      lab.className = 'opt';
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = id;
+      radio.value = oi;
+      // per-question immediate explanation on selection (without revealing correct choice highlight)
+      radio.addEventListener('change', () => onSelect(q, id));
+      lab.appendChild(radio);
+      const span = document.createElement('span');
+      span.textContent = opt;
+      lab.appendChild(span);
+      li.appendChild(lab);
+      ul.appendChild(li);
+    });
+    block.appendChild(ul);
+
+    const exp = document.createElement('div');
+    exp.id = `exp_${q.id}`;
+    exp.className = 'exp';
+    block.appendChild(exp);
+
+    qRoot.appendChild(block);
+  });
+}
+
+function onSelect(q, name) {
+  const labels = Array.from(qRoot.querySelectorAll(`input[name="${name}"]`)).map(i => i.closest('.opt'));
+  labels.forEach(l => l.classList.remove('correct','incorrect'));
+  const chosen = qRoot.querySelector(`input[name="${name}"]:checked`);
+  if (!chosen) return;
+  const val = parseInt(chosen.value, 10);
+  chosen.closest('.opt').classList.add(val === q.ans ? 'correct' : 'incorrect');
+  const exp = document.getElementById(`exp_${q.id}`);
+  exp.textContent = q.exp;
+  exp.classList.add('show', (val === q.ans) ? 'ok' : 'bad');
+}
+
+function start() {
+  const topic = topicSel.value;
+  CURRENT = (topic === 'All') ? BANK.slice() : BANK.filter(q => q.topic === topic);
+  resultsEl.style.display = 'none';
+  bestEl.style.display = 'none';
+  render(CURRENT);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function band(pct) {
+  if(pct>=90) return 'Excellent';
+  if(pct>=80) return 'Very good';
+  if(pct>=70) return 'Good';
+  if(pct>=60) return 'Satisfactory';
+  return 'Keep studying';
+}
+
+function firstUnanswered() {
+  const qs = qRoot.querySelectorAll('.question');
+  for (const b of qs) {
+    const id = b.dataset.qid;
+    if (!qRoot.querySelector(`input[name="q_${id}"]:checked`)) return b;
+  }
+  return null;
+}
+
+function submit() {
+  const missing = firstUnanswered();
+  if (missing) {
+    missing.scrollIntoView({behavior:'smooth', block:'center'});
+    missing.style.outline = '2px solid rgba(56,189,248,.7)';
+    setTimeout(()=>missing.style.outline='none', 1200);
+    return;
+  }
+  let correct=0;
+  CURRENT.forEach(q => {
+    const chosen = qRoot.querySelector(`input[name="q_${q.id}"]:checked`);
+    const val = chosen ? parseInt(chosen.value, 10) : -1;
+    const labels = Array.from(qRoot.querySelectorAll(`input[name="q_${q.id}"]`)).map(i => i.closest('.opt'));
+    labels.forEach(l=>l.classList.remove('correct','incorrect'));
+    if (val === q.ans) {
+      correct++;
+      chosen.closest('.opt').classList.add('correct');
+    } else if (chosen) {
+      chosen.closest('.opt').classList.add('incorrect');
+      const corr = qRoot.querySelector(`input[name="q_${q.id}"][value="${q.ans}"]`).closest('.opt');
+      corr.classList.add('correct');
+    }
+    const exp = document.getElementById(`exp_${q.id}`);
+    exp.textContent = q.exp;
+    exp.classList.add('show', (val === q.ans) ? 'ok' : 'bad');
+  });
+  const total = CURRENT.length;
+  const pct = Math.round((correct/total)*100);
+  resultsEl.textContent = `${correct} / ${total} correct (${pct}%). ${band(pct)}.`;
+  resultsEl.style.display = 'block';
+
+  try {
+    const prev = localStorage.getItem(LS_KEY);
+    const prevNum = prev ? parseInt(prev,10) : 0;
+    if (pct > prevNum) localStorage.setItem(LS_KEY, String(pct));
+    const best = localStorage.getItem(LS_KEY);
+    if (best) {
+      bestEl.textContent = `Best score on this device: ${best}`;
+      bestEl.style.display = 'block';
+    }
+  } catch(_){}
+  resultsEl.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+startBtn.addEventListener('click', start);
+submitBtn.addEventListener('click', submit);
+printBtn.addEventListener('click', () => window.print());
+clearBestBtn.addEventListener('click', () => { localStorage.removeItem(LS_KEY); bestEl.style.display='none'; });
+
+start();
+</script>
+</body>
+</html>
